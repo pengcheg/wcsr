@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"/>
+	<link rel="stylesheet" type="text/css" href="../dist/css/page.css"/>
+	<title></title>
+</head>
+<body class="bg-gray response-big commission-body">
+	<div class="commission-div">
+		<div class="commission-header color898989">
+			<span>期次</span>
+			<span>应还金额</span>
+			<span>应还日期</span>
+			<span>状态</span>
+		</div>
+		<div>
+			<span>1</span>
+			<span>2000.00</span>
+			<span>2017.04.17</span>
+			<span class="repayed">已还</span>
+		</div>
+		<div>
+			<span>2</span>
+			<span>2000.00</span>
+			<span>2017.04.17</span>
+			<span class="repayed">已还</span>
+		</div>
+		<div>
+			<span>3</span>
+			<span>2000.00</span>
+			<span>2017.04.17</span>
+			<span class="not-repay">未还</span>
+		</div>
+	</div>
+	<div id="record"></div>
+    <div class="record-loading" id="loading">正在加载中...</div>
+	<div class="record-loading hide" id="nomoreresults"></div>
+	<script src="../dist/js/lib/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../dist/js/common.js" type="text/javascript" charset="utf-8"></script>
+	<script>
+	//获取borrowNid
+	var borrowNid = getQueryString("borrowNid");
+	var userId = getQueryString("userId");
+	</script>
+	<script src="${ctx}/js/commission.scrollpagination.js?version=${timeStamp}" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		$(function(){
+			
+			var aa = '\
+			<div class="commission-header color898989">\
+				<span>期次</span>\
+				<span>金额</span>\
+				<span>状态</span>\
+			</div>\
+				'
+			/*测试上拉刷新用的dom */
+			/* for(var j=1;j<20;j++){
+				$(".commission-div").append(aa)
+			} */
+			$.ajax({
+				type:"post",
+				url:"${ctx}/borrow/commissionDetailPageAction",
+				async:true,
+				data:{"borrowNid":borrowNid,'startInt':0,'selCount':20,"userId":userId},
+				success:function(data){
+					var length = data.commissionList.length;
+					var arr = ["未发放","已发放","未发放","未发放","未发放","未发放","未发放","未发放","未发放"];
+					//循环输出期次金额状态
+					for(var i = 0;i<length;i++){
+						var str = '\
+							<div>\
+								<span>'+data.commissionList[i].period+'</span>\
+								<span>'+data.commissionList[i].commission+'</span>\
+								<span class="commission-add-color-span">'+arr[data.commissionList[i].status]+'</span>\
+							</div>\
+							'; 
+							$(".commission-div").append(str)
+					}
+					for(var j = 0;j<length;j++){
+						//未发放
+						if(data.commissionList[j].status!==1){
+							$(".commission-add-color-span").eq(j).addClass("commission-not-get");
+						}
+						//已发放
+						if(data.commissionList[j].status===1){
+							$(".commission-add-color-span").eq(j).addClass("color898989");
+						}
+					}
+					 //loadmore  success调用再scrollpagination.js里
+			           $('#record').scrollPagination({
+							'contentPage': "${ctx}/borrow/commissionDetailPageAction",
+							// the url you are fetching the results
+							'contentData': {
+								'borrowNid': borrowNid,'startInt':this.dlength,'selCount':10,'userId':userId
+							},
+							// these are the variables you can pass to the request, for example: children().size() to know which page you are
+							'scrollTarget': $(window),
+							// who gonna scroll? in this example, the full window
+							'heightOffset': 0,
+							// it gonna request when scroll is 10 pixels before the page ends
+							'beforeLoad': function() { // before load function, you can display a preloader div
+								$('#loading').fadeIn('fast');
+					 			$('#loading').attr('scrollpagination','disabled');
+							},
+							'afterLoad': function(elementsLoaded) { // after loading content, you can use this function to animate your new elements
+							$('#loading').fadeOut('fast');
+							 $('#loading').attr('scrollpagination','enabled');
+								if (elementsLoaded.length == 0) {
+									$('#nomoreresults').removeClass("hide");
+									$('#nomoreresults').fadeIn('slow');
+									$('#record').stopScrollPagination();
+									// $('#nomoreresults').fadeOut();
+								}
+								var i = 0;
+								$(elementsLoaded).fadeInWithDelay();
+								if ($('#record').children().size() > 100) { // if more than 100 results already loaded, then stop pagination (only for testing)
+					
+									$('#nomoreresults').fadeIn();
+									$('#record').stopScrollPagination();
+								};
+								
+							}
+						});     
+						// code for fade in element by element
+						$.fn.fadeInWithDelay = function() {
+							var delay = 0;
+							return this.each(function() {
+								$(this).delay(delay).animate({
+									opacity: 1
+								}, 200);
+								delay += 100;
+							});
+						};
+				},
+				error:function(){
+					console.log("error")
+				}
+			});
+			
+		})
+		</script>
+</body>
+</html>
